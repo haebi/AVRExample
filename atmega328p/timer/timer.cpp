@@ -12,20 +12,21 @@ int count = 0;
 int main(void)
 {
 	// OCR1A =  OCR1AH + OCR1AL = (8 + 8 = 16 bit)
-	// Dec 15624 (?) // 15624 x 1024 = 15998976
-	// Reason for THE CPU CLOCK MUST DIVIDED BY 8 ( 8 means 8 bit ? )
+	// Dec 15624 : repeat 0 ~ 15624 (15625 = 0)
 	OCR1A = 0x3D08; 
 
-	// Page 172
-	// CTC Mode : Set to TOP OCR1A
-	// 0 1 0 0 (TCCR1B:4,  TCCR1B:3, TCCR1A:1, TCCR1A:0)
-	setbit(TCCR1B, WGM12);
+	// Page 171-172
+	// Waveform Generation Mode : (TCCR1B:4,  TCCR1B:3, TCCR1A:1, TCCR1A:0)
+	// 0 1 0 0 - Set to TOP OCR1A
+	setbit(TCCR1B, WGM12); // Configure timer 1 for CTC mode
 
-	setbit(TIMSK1, OCIE1A);
+	// Page 135
+	// TIMSK1 – Timer/Counter1 Interrupt Mask Register
+	setbit(TIMSK1, OCIE1A); // Enable CTC interrupt
 
 	// Page 173
 	// Clock Select Bit ( CS12 CS11 CS10 )
-	// TCCR1B CS12, CS10 set to 1 means : clock I/O / 1024 (From prescaler)
+	// 0 1 0 - clock I/O / 1024 (From prescaler)
 	setbit(TCCR1B, CS12);
 	setbit(TCCR1B, CS10);
 
