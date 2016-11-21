@@ -4,11 +4,42 @@
 #define clrbit(PORTX, BitX) PORTX &= ~(1 << BitX)	// clear bit
 
 #include <avr/io.h>
+#include <util/delay.h>
 #include <avr/interrupt.h>
 
+int count0 = 0;
+int tick0  = 0;
+
 int count1 = 0;
+
 int count2 = 0;
-int tick2 = 0;
+int tick2  = 0;
+
+void setTimer0()
+{
+	// 1sec for 8-bit
+	// 1 / 16000000 = 0.0000000625 * 256 (prescale) = 0.000016 (usec)
+	// 0.000016 (usec) * 125 (multiplier) = 0.002 * 1000 = 2 (ms)
+	// 2 (ms) * 500 (count) = 1 (sec)
+
+	TCNT0   = 0;
+	
+	// Set CTC compare value with a prescaler of 256
+	OCR0A   = 124; // 125 -1 
+
+	// 0 1 0 - Configure timer 0 for CTC mode [p.106]
+	clrbit(TCCR0B, WGM02); // 0
+	setbit(TCCR0A, WGM01); // 1
+	clrbit(TCCR0A, WGM00); // 0
+
+	// 1 0 0 - Start timer at Fcpu/256 [p. 108]
+	setbit(TCCR0B, CS02); // 1
+	clrbit(TCCR0B, CS01); // 0
+	clrbit(TCCR0B, CS00); // 0
+	
+	// Enable CTC interrupt
+	setbit(TIMSK0, OCIE0A);
+}
 
 void setTimer1()
 {
@@ -39,34 +70,37 @@ void setTimer2()
 	// 0.000016 (usec) * 125 (multiplier) = 0.002 * 1000 = 2 (ms)
 	// 2 (ms) * 500 (count) = 1 (sec)
 
-	// 130
-	TCNT2   = 0x82; // 256 - 125 (multiplier) = 131 -1 = 130 (0x82)
-//	TCNT2   = 0;
+	TCNT2   = 0;
+	
+	// Set CTC compare value with a prescaler of 256 
+	OCR2A   = 124; // 125 -1 
 
-	// Dec 250
-//	OCR2A   = 0xFA; // Set CTC compare value with a prescaler of 64 
-	OCR2A   = 0xFF;
+	// 0 1 0 - Configure timer 2 for CTC mode [p.155]
+	clrbit(TCCR2B, WGM22); // 0
+	setbit(TCCR2A, WGM21); // 1
+	clrbit(TCCR2A, WGM20); // 0
 
-	TCCR2A |= (1 << WGM21); // Configure timer 2 for CTC mode [p.155]
+	// 1 1 0 - Start timer at Fcpu/256 [p.156-157]
+	setbit(TCCR2B, CS22); // 1
+	setbit(TCCR2B, CS21); // 1
+	clrbit(TCCR2B, CS20); // 0
 
-	// 1 1 0 - Start timer at Fcpu/256
-	TCCR2B |= (1 << CS22);  // Start timer at Fcpu/64 [p.156-157]
-	TCCR2B |= (1 << CS21);
-	//TCCR2B |= (1 << CS20);
-
-	TIMSK2 |= (1 << OCIE2A); // Enable CTC interrupt
+	// Enable CTC interrupt
+	TIMSK2 |= (1 << OCIE2A);
 }
 
 // Main Function
 int main(void)
 {
-	setTimer1();
-	setTimer2();
+	setTimer0(); //  8 bit timer (TCNT0)
+	setTimer1(); // 16 bit timer (TCNT1)
+	setTimer2(); //  8 bit timer (TCNT2)
 
 	sei(); // Enable global interrupts
 
-	DDRD |= (1 << DDD6); // Set output PD6
-	DDRD |= (1 << DDD7); // Set output PD7
+	setbit(DDRD, DDD6); // Set output PD6
+	setbit(DDRD, DDD7); // Set output PD7
+	setbit(DDRB, DDB0); // Set output PB0
 
 	while (1)
 	{
@@ -74,9 +108,34 @@ int main(void)
 	}
 }
 
+// Timer0 interrupt
+ISR (TIMER0_COMPA_vect)
+{
+	tick0++;
+
+//	if (!(tick0 == 500)) // 1 sec
+	if (!(tick0 == 125)) // 1/4 sec
+		return;
+
+	tick0 = 0;
+
+	if (count0 == 0)
+	{
+		count0++;
+		clrbit(PORTB, PORTB0);
+	}
+	else
+	{
+		setbit(PORTB, PORTB0);
+		count0 = 0;
+	}
+}
+
 // Timer1 interrupt
 ISR (TIMER1_COMPA_vect)
 {
+	// already 1 sec
+
 	if (count1 == 0)
 	{
 		count1++;
@@ -90,11 +149,12 @@ ISR (TIMER1_COMPA_vect)
 }
 
 // Timer2 interrupt
-ISR(TIMER2_COMPA_vect) 
+ISR (TIMER2_COMPA_vect) 
 {
 	tick2++;
 
-	if (!(tick2 == 500))
+//	if (!(tick2 == 500)) // 1 sec
+	if (!(tick2 == 250)) // 1/2 sec
 		return;
 
 	tick2 = 0;
