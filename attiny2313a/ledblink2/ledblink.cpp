@@ -10,22 +10,22 @@
 int main(void)
 {
 	// Pin Mode Setting
-	// 0 - output
-	// 1 - input
+	// 0 - input
+	// 1 - output
 	//DDRD = 0b00000000;
-	clrbit(DDRD,DDD6);
+	setbit(DDRD,DDD6);
 
-	// In input mode
+	// In output mode
 	// 0 - OFF
 	// 1 - ON
 	//PORTD = 0b00000000;
 
 	while(1)
 	{
-		setbit(PORTD, PORTD6); // set PD6 ON (PORTD = 0b__1_____)
+		setbit(PORTD, PORTD6); // set PD6 ON (PORTD = 0b_1______)
 		_delay_ms(1000); // time interval unit
 
-		clrbit(PORTD, PORTD6); // set PD6 OFF (PORTD = 0b__0_____)
+		clrbit(PORTD, PORTD6); // set PD6 OFF (PORTD = 0b_0______)
 		_delay_ms(1000); // time interval unit
 	}
 }
