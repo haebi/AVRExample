@@ -1,3 +1,9 @@
+// LED bits example
+// Auth : Haebi
+// Date : 2017-01-08
+//
+// Vcc - LED - AVR Pin(output LOW, as GND) = PIN OUTPUT 0 = LED ON
+
 #define F_CPU 16000000UL	// Set CPU Frequency 16 MHz
 
 #define setbit(PORTX, BitX) PORTX |= (1 << BitX)	// set bit to 1
@@ -7,7 +13,8 @@
 #include <util/delay.h>
 
 void testLED();
-void dispLED();
+void dispLED(int);
+void delay_ms(int);
 
 // Main Function
 int main(void)
@@ -18,69 +25,93 @@ int main(void)
 	DDRB = 0xFF; // 0b11111111
 
 	int check = 1;
+	int delay = 500;
 
 	while(1)	
 	{
+		PORTB = 0xFF; // set off all LEDs.
+
 		// TEST LED
 		if(check)
 		{	
-			check = 0;
 			testLED();
+
+			check--;
 		}
 
-		dispLED();
-
-
-		PORTB = 0x00; // set off all LEDs.
+		dispLED(delay);
 	}
 }
 
+// TEST LEDs
 void testLED()
 {
-	PORTB = 0b00000001;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b00000011;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b00000111;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b00001111;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b00011111;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b00111111;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b01111111;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b11111111;
-	_delay_ms(1000); // time interval unit
-	PORTB = 0b11111110;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b11111100;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b11111000;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b11110000;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b11100000;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b11000000;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b10000000;
-	_delay_ms(500); // time interval unit
-	PORTB = 0b00000000;
-	_delay_ms(500); // time interval unit
+	int num;
+	int i;
+
+	i   = 1;
+	num = 255;
+
+	PORTB = 0xFF;
+	delay_ms(500);
+
+	while(num >= 0)
+	{
+		num -= i;
+
+		i   *= 2;
+
+		PORTB = num;
+
+		delay_ms(500);
+	}
+
+	i = 1;
+
+	PORTB = 0x00;
+	delay_ms(500);
+
+	while(num <= 255)
+	{
+		num += i;
+
+		i *= 2;
+
+		PORTB = num;
+
+		if(num < 255)
+			delay_ms(500);
+	}
 }
 
-void dispLED()
+// Display LEDbits
+void dispLED(int delay)
 {
-	int cnt = 0;
+	PORTB = 0xFF;
 
-	while(cnt < 256)
+	int cnt = 255;
+
+	while(cnt >= 0)
 	{
-		cnt++;
-
 		PORTB = cnt; // show binary LED
 
-		_delay_ms(500); // time interval unit
+		delay_ms(delay);
+
+		cnt--;
+	}
+}
+
+// Miliseconds delay function
+void delay_ms(int delay)
+{
+	int i;
+
+	i = 0;
+
+	while(i < delay)
+	{
+		_delay_ms(1);
+
+		i++;
 	}
 }
