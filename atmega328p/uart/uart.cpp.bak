@@ -1,0 +1,117 @@
+#define F_CPU 16000000UL // Clock Speed
+#define BAUD 9600
+#define MYUBRR F_CPU / 16 / BAUD -1
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+/* Based on Atmel 328P Reference Source Code
+ * */
+
+void USART_Init(unsigned int ubrr)
+{
+	/*Set baud rate */
+	UBRR0H = (unsigned char)(ubrr>>8);
+	UBRR0L = (unsigned char)ubrr;
+	/* Enable receiver and transmitter */
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+	/* Set frame format: 8data, 2stop bit */
+	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+}
+
+void USART_Transmit( unsigned char data )
+{
+	/* Wait for empty transmit buffer */
+	while ( !( UCSR0A & (1<<UDRE0) ) );
+	/* Put data into buffer, sends the data */
+	UDR0 = data;
+}
+
+unsigned char USART_Receive( void )
+{
+	/* Wait for data to be received */
+	while ( !(UCSR0A & (1<<RXC0)) )
+		;
+	/* Get and return received data from buffer */
+	return UDR0;
+}
+
+int main( void )
+{
+	USART_Init(MYUBRR);
+
+	while(1)
+	{
+		_delay_ms(500);
+		USART_Transmit('C');
+	}
+}
+
+
+
+/*
+#define F_CPU 16000000UL	// 16MHz
+#define USART_BAUDRATE 
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) -1)
+
+#define FOSC 1843200 // Clock Speed
+#define BAUD 9600
+#define MYUBRR FOSC/16/BAUD-1
+
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+volatile unsigned char value;
+
+// [REF] 16.1. Interrupt Vectors in ATmega328/P
+ISR(USART_RX_vect)
+{
+	// [REF] 24.7.1. Sending Frames with 5 to 8 Data Bits
+	value = UDR0;	// read UART register
+//	PORTB = ~value;
+}
+
+void USART_Init(void)
+{
+	UBRRL = BAUD_PRESCALE;
+	UBRRH = (BAUD_PRESCALE >> 8);
+
+	// enable TX / RX transmitter, receive complete interrupt
+	UCSRB = ((1<<TXEN)|(1<<RXEN) | (1<<RXCIE));
+}
+
+void USART_SendByte(uint8_t u8Data)
+{
+	// wait until last byte has been transmitted
+	while((UCSRA &(1<<UDRE)) == 0);
+
+	// transmit data
+	UDR0 = u8Data;
+}
+
+uint8_t USART_ReceiveByte()
+{
+	while((UCSRA &(1<<RXC)) == 0);
+	return UDR0;
+}
+
+void Led_init(void)
+{
+	DDRB = 0xFF;
+	PORTB = 0xFF;
+}
+
+int main(void)
+{
+	USART_Init();
+	sei();
+
+	while(1)
+	{
+		_delay_ms(1000);
+	}
+}
+*/
