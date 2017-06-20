@@ -17,6 +17,10 @@
 
 unsigned char data, receive;
 
+char snd_data[128];
+char cmd_data[128];
+unsigned char cmd_idx;
+
 void USART_Init(unsigned int ubrr)
 {
 	/*Set baud rate */
@@ -25,7 +29,8 @@ void USART_Init(unsigned int ubrr)
 	/* Enable receiver and transmitter */
 	//UCSR0B = (1<<RXEN0)|(1<<TXEN0);
 	//UCSR0B = (1<<RXEN0)|(1<<TXEN0|1<<RXCIE0|1<<TXCIE0|1<<UDRIE0); // 1<<UDRIE0 slow problem... why?
-	UCSR0B = (1<<RXEN0)|(1<<TXEN0|1<<RXCIE0|1<<TXCIE0);
+	//UCSR0B = (1<<RXEN0)|(1<<TXEN0|1<<RXCIE0|1<<TXCIE0); // unimplemented TX may cause problem.
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0|1<<RXCIE0);
 
 	/* Set frame format: 8data, 2stop bit */
 	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
@@ -73,6 +78,11 @@ int main( void )
 	// Enable global interrupt
 	sei();
 
+	// initialize variables
+	cmd_idx = 0;
+	memset(cmd_data, 0x00, sizeof(cmd_data));
+	memset(snd_data, 0x00, sizeof(cmd_data));
+
 	while(1)
 	{
 		// UART receive->send Blocked
@@ -80,7 +90,6 @@ int main( void )
 		//char rxc = USART_Receive();
 		//USART_Transmit(rxc);
 		// ------------------------------
-
 
 		// LED blink for check main cycle.
 		bit_set(PORTB, PORTB1); // ON
@@ -107,9 +116,35 @@ int main( void )
 // Interrupt UART Receive (avoid blocking)
 ISR (USART_RX_vect)
 {
+	// receive from uart RX
 	data = UDR0;
 
+	// send to uart TX
 	UDR0 = data;
-	while ( !( UCSR0A & (1<<UDRE0) ) );
+	while ( !( UCSR0A & (1<<UDRE0) ) ); // wait for send complete
+
+	// memo command
+	cmd_data[cmd_idx] = data;
+	cmd_idx++;
+
+	// return key process
+	if(data == '\r')
+	{
+		// process command
+		if(strncmp(cmd_data, "uname", 5) == 0)
+		{
+			sprintf(snd_data, "\nATMega328 shell 0.1 Tue June 20 23:32:00 KST 2017");
+			sendMessage(snd_data);
+		}
+
+		// process new line
+		memset(snd_data, 0x00, sizeof(snd_data));
+		sprintf(snd_data, "\r\n# ");
+		sendMessage(snd_data);
+
+		// clear command
+		memset(cmd_data, 0x00, sizeof(cmd_data));
+		cmd_idx = 0;
+	}
 }
 

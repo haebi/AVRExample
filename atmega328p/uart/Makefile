@@ -10,5 +10,7 @@ uart.o: dummy
 uartio.o: dummy
 	avr-gcc -mmcu=atmega328p -Os uartio.cpp -o uartio.o
 
+clean:
+	rm -rf *.o *.hex
 
 dummy:
