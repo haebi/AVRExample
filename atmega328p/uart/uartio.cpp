@@ -64,6 +64,21 @@ void sendMessage(char* data)
 	}
 }
 
+void blink_led(unsigned char *led)
+{
+	if (*led)
+	{
+		bit_set(PORTB, PORTB1); // ON
+	}
+	else
+	{
+		bit_clear(PORTB, PORTB1); // OFF
+	}
+
+	++*led;
+	*led = *led > 1 ? 0 : 1;
+}
+
 int main( void )
 {
 	// set pin output
@@ -83,6 +98,9 @@ int main( void )
 	memset(cmd_data, 0x00, sizeof(cmd_data));
 	memset(snd_data, 0x00, sizeof(cmd_data));
 
+	sprintf(snd_data, "\nStart...");
+	sendMessage(snd_data);
+
 	while(1)
 	{
 		// UART receive->send Blocked
@@ -91,25 +109,9 @@ int main( void )
 		//USART_Transmit(rxc);
 		// ------------------------------
 
-		// LED blink for check main cycle.
-		bit_set(PORTB, PORTB1); // ON
+		blink_led(&led);
+
 		_delay_ms(500);
-
-		bit_clear(PORTB, PORTB1); // OFF
-		_delay_ms(500);
-
-		if (led)
-		{
-			PORTB = 0b00000000; // OFF
-		}
-		else
-		{
-			PORTB = 0b00000001; // ON
-		}
-
-		led++;
-		led = led > 1 ? 0 : 1;
-
 	}
 }
 
@@ -131,9 +133,9 @@ ISR (USART_RX_vect)
 	if(data == '\r')
 	{
 		// process command
-		if(strncmp(cmd_data, "uname", 5) == 0)
+		if(strncmp(cmd_data, "uname", cmd_idx-1) == 0)
 		{
-			sprintf(snd_data, "\nATMega328 shell 0.1 Tue June 20 23:32:00 KST 2017");
+			sprintf(snd_data, "\nATMega328 shell 0.1 Tue June 20 22:07:00 KST 2017");
 			sendMessage(snd_data);
 		}
 
